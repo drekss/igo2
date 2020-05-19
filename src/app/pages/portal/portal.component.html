@@ -47,6 +47,7 @@
 
       #mapBrowser
       igoQuery
+      [queryFeaturesHitTolerance]="15"
       [waitForAllQueries]="true"
       [queryFeatures]="true"
       igoMapContext
@@ -120,29 +121,13 @@
       </igo-actionbar>
   
       <igo-workspace-widget-outlet [workspace]="workspace"></igo-workspace-widget-outlet>
-  
-      <igo-entity-table
-        *ngIf="workspace.entityStore && workspace.meta && workspace.meta.tableTemplate"
-        class="table-compact table-centered"
-        [store]="workspace.entityStore"
-        [template]="workspace.meta.tableTemplate">
-      </igo-entity-table>
     </ng-container>
+  </ng-container>
 
-
-
-
-    <!-- <igo-workspace-selector igoWorkspaceSelector [store]="workspaceStore" [map]="map"></igo-workspace-selector> -->
-    <!-- <igo-actionbar
-      *ngIf="workspace"
-      [store]="workspace.actionStore"
-      [horizontal]="true"
-      [xPosition]="'after'"
-      [yPosition]="'above'"
-      [withToggleButton]="true"
-      [withTitle]="actionbarWithTitle"
-      [mode]="actionbarMode">
-    </igo-actionbar> -->
+  <ng-container *ngIf="selectedWorkspace$ | async as workspace">
+    <igo-entity-table *ngIf="workspace.entityStore && workspace.meta && workspace.meta.tableTemplate"
+      [store]="workspace.entityStore" [template]="workspace.meta.tableTemplate">
+    </igo-entity-table>
   </ng-container>
 
   <!-- <igo-entity-table

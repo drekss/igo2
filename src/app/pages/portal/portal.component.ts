@@ -309,11 +309,6 @@ export class PortalComponent implements OnInit, OnDestroy {
       })
     );
 
-    this.workspaceStore.empty$.subscribe(s => console.log('empty?', s));
-
-    this.selectedWorkspace$.subscribe(s => {
-      console.log('selectedwks', s);
-    });
 
     this.tableStore.load([
       { id: '2', name: 'Name 2', description: 'Description 2' },
