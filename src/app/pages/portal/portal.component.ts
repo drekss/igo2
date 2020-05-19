@@ -7,8 +7,8 @@ import {
   ElementRef
 } from '@angular/core';
 import { ActivatedRoute, Params } from '@angular/router';
-import { Subscription, of, BehaviorSubject } from 'rxjs';
-import { debounceTime } from 'rxjs/operators';
+import { Subscription, of, BehaviorSubject, Observable } from 'rxjs';
+import { debounceTime, map } from 'rxjs/operators';
 
 import { MapBrowserPointerEvent as OlMapBrowserPointerEvent } from 'ol/MapBrowserEvent';
 import * as olProj from 'ol/proj';
@@ -20,15 +20,16 @@ import {
   ConfigService
 } from '@igo2/core';
 import {
-  // ActionbarMode,
-  // Workspace,
-  // WorkspaceStore,
-  // EntityRecord,
+  ActionbarMode,
+  Workspace,
+  WorkspaceStore,
+  EntityRecord,
   ActionStore,
   EntityStore,
   // getEntityTitle,
   Toolbox,
-  Tool
+  Tool,
+  EntityTableScrollBehavior
 } from '@igo2/common';
 import { AuthService } from '@igo2/auth';
 import { DetailedContext } from '@igo2/context';
@@ -58,7 +59,8 @@ import {
   MapState,
   SearchState,
   QueryState,
-  ContextState
+  ContextState,
+  WorkspaceState
 } from '@igo2/integration';
 
 import {
@@ -91,7 +93,7 @@ export class PortalComponent implements OnInit, OnDestroy {
   public minSearchTermLength = 2;
   public hasExpansionPanel = false;
   public expansionPanelExpanded = false;
-  public toastPanelOpened = true;
+  // public toastPanelOpened = true;
   public sidenavOpened = false;
   public searchBarTerm = '';
   public onSettingsChange$ = new BehaviorSubject<boolean>(undefined);
@@ -102,6 +104,10 @@ export class PortalComponent implements OnInit, OnDestroy {
   private selectFirstSearchResult$: BehaviorSubject<
     boolean
   > = new BehaviorSubject(true);
+
+  public selectedWorkspace$: Observable<Workspace>;
+  public scrollBehavior = EntityTableScrollBehavior.Instant;
+
   private selectFirstSearchResult$$: Subscription;
   public zoomAuto = false;
   public forceCoordsNA = false;
@@ -173,18 +179,18 @@ export class PortalComponent implements OnInit, OnDestroy {
     return false;
   }
 
-  // get actionbarMode(): ActionbarMode {
-  //   if (this.mediaService.media$.value === Media.Mobile) {
-  //     return ActionbarMode.Overlay;
-  //   }
-  //   return this.expansionPanelExpanded
-  //     ? ActionbarMode.Dock
-  //     : ActionbarMode.Overlay;
-  // }
-  //
-  // get actionbarWithTitle(): boolean {
-  //   return this.actionbarMode === ActionbarMode.Overlay;
-  // }
+  get actionbarMode(): ActionbarMode {
+    if (this.mediaService.media$.value === Media.Mobile) {
+      return ActionbarMode.Overlay;
+    }
+    return this.expansionPanelExpanded
+      ? ActionbarMode.Dock
+      : ActionbarMode.Overlay;
+  }
+
+  get actionbarWithTitle(): boolean {
+    return this.actionbarMode === ActionbarMode.Overlay;
+  }
 
   get searchStore(): EntityStore<SearchResult> {
     return this.searchState.store;
@@ -198,15 +204,15 @@ export class PortalComponent implements OnInit, OnDestroy {
     return this.toolState.toolbox;
   }
 
-  // get toastPanelContent(): string {
-  //   let content;
-  //   if (this.workspace !== undefined && this.workspace.hasWidget) {
-  //     content = 'workspace';
-  //   } else if (this.searchResult !== undefined) {
-  //     content = this.searchResult.meta.dataType.toLowerCase();
-  //   }
-  //   return content;
-  // }
+  get toastPanelContent(): string {
+    let content;
+    if (this.workspace !== undefined && this.workspace.hasWidget) {
+      content = 'workspace';
+    } /*else if (this.searchResult !== undefined) {
+      content = this.searchResult.meta.dataType.toLowerCase();
+    }*/
+    return content;
+  }
 
   // get toastPanelTitle(): string {
   //   let title;
@@ -219,29 +225,29 @@ export class PortalComponent implements OnInit, OnDestroy {
   //   return title;
   // }
 
-  // get toastPanelOpened(): boolean {
-  //   const content = this.toastPanelContent;
-  //   if (content === 'workspace') {
-  //     return true;
-  //   }
-  //   return this._toastPanelOpened;
-  // }
-  // set toastPanelOpened(value: boolean) {
-  //   this._toastPanelOpened = value;
-  // }
-  // private _toastPanelOpened = false;
+  get toastPanelOpened(): boolean {
+    const content = this.toastPanelContent;
+    if (content === 'workspace') {
+      return true;
+    }
+    return this._toastPanelOpened;
+  }
+  set toastPanelOpened(value: boolean) {
+    this._toastPanelOpened = value;
+  }
+  private _toastPanelOpened = false;
 
-  // get workspaceStore(): WorkspaceStore {
-  //   return this.workspaceState.store;
-  // }
-  //
-  // get workspace(): Workspace {
-  //   return this.workspaceState.workspace$.value;
-  // }
+  get workspaceStore(): WorkspaceStore {
+    return this.workspaceState.store;
+  }
+
+  get workspace(): Workspace {
+    return this.workspaceState.workspace$.value;
+  }
 
   constructor(
     private route: ActivatedRoute,
-    // private workspaceState: WorkspaceState,
+    private workspaceState: WorkspaceState,
     public authService: AuthService,
     public mediaService: MediaService,
     public layerService: LayerService,
@@ -292,6 +298,22 @@ export class PortalComponent implements OnInit, OnDestroy {
         handler: () => this.openGoogleStreetView(this.contextMenuCoord)
       }
     ]);
+
+    this.selectedWorkspace$ = this.workspaceStore.stateView
+    .firstBy$(
+      (record: EntityRecord<Workspace>) => record.state.selected === true
+    )
+    .pipe(
+      map((record: EntityRecord<Workspace>) => {
+        return record === undefined ? undefined : record.entity;
+      })
+    );
+
+    this.workspaceStore.empty$.subscribe(s => console.log('empty?', s));
+
+    this.selectedWorkspace$.subscribe(s => {
+      console.log('selectedwks', s);
+    });
 
     this.tableStore.load([
       { id: '2', name: 'Name 2', description: 'Description 2' },

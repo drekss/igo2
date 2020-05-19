@@ -41,10 +41,6 @@
     </app-sidenav>
 
     <igo-map-browser
-      igoPointerPositionByKey
-      [pointerPositionByKeyDelay]="500"
-      (pointerPositionByKeyCoord)="searchCoordinate($event)"
-
       igoSearchPointerSummary
       [igoSearchPointerSummaryDelay]="500"
       [igoSearchPointerSummaryEnabled]=igoSearchPointerSummaryEnabled
@@ -106,6 +102,36 @@
   [@toastOffsetY]="(isMobile() && !toastPanelOpened && queryState.store.entities$.value.length > 0 && !expansionPanelExpanded) ? 'true' : 'false'">
 
   <ng-container expansionPanelHeader>
+    <igo-workspace-selector 
+      igoWorkspaceSelector
+      [store]="workspaceStore"
+      [map]="map">
+    </igo-workspace-selector>
+
+    <ng-container *ngIf="selectedWorkspace$ | async as workspace">
+      <igo-actionbar
+        [icon]= "head-dots-horizontal-outline"
+        *ngIf="workspace.actionStore"
+        [store]="workspace.actionStore"
+        [horizontal]="true"
+        [withToggleButton]="true"
+        [withTitle]="actionbarWithTitle"
+        [mode]="actionbarMode">
+      </igo-actionbar>
+  
+      <igo-workspace-widget-outlet [workspace]="workspace"></igo-workspace-widget-outlet>
+  
+      <igo-entity-table
+        *ngIf="workspace.entityStore && workspace.meta && workspace.meta.tableTemplate"
+        class="table-compact table-centered"
+        [store]="workspace.entityStore"
+        [template]="workspace.meta.tableTemplate">
+      </igo-entity-table>
+    </ng-container>
+
+
+
+
     <!-- <igo-workspace-selector igoWorkspaceSelector [store]="workspaceStore" [map]="map"></igo-workspace-selector> -->
     <!-- <igo-actionbar
       *ngIf="workspace"
@@ -119,10 +145,10 @@
     </igo-actionbar> -->
   </ng-container>
 
-  <igo-entity-table
+  <!-- <igo-entity-table
     [store]="tableStore"
     [template]="tableTemplate">
-  </igo-entity-table>
+  </igo-entity-table> -->
 </app-expansion-panel>
 
 <app-toast-panel *ngIf="!(queryStore.empty$ | async)"
