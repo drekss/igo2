@@ -29,7 +29,8 @@ import {
   // getEntityTitle,
   Toolbox,
   Tool,
-  EntityTableScrollBehavior
+  EntityTableScrollBehavior,
+  Widget
 } from '@igo2/common';
 import { AuthService } from '@igo2/auth';
 import { DetailedContext } from '@igo2/context';
@@ -51,7 +52,8 @@ import {
   sourceCanReverseSearch,
   generateWMSIdFromSourceOptions,
   WMSDataSourceOptions,
-  FEATURE
+  FEATURE,
+  ExportOptions
 } from '@igo2/geo';
 
 import {
@@ -60,7 +62,8 @@ import {
   SearchState,
   QueryState,
   ContextState,
-  WorkspaceState
+  WorkspaceState,
+  ImportExportState
 } from '@igo2/integration';
 
 import {
@@ -92,6 +95,7 @@ import {
 export class PortalComponent implements OnInit, OnDestroy {
   public minSearchTermLength = 2;
   public hasExpansionPanel = false;
+  public emptyWorkspaces$ = new BehaviorSubject<boolean>(false);
   public expansionPanelExpanded = false;
   // public toastPanelOpened = true;
   public sidenavOpened = false;
@@ -105,7 +109,6 @@ export class PortalComponent implements OnInit, OnDestroy {
     boolean
   > = new BehaviorSubject(true);
 
-  public selectedWorkspace$: Observable<Workspace>;
   public scrollBehavior = EntityTableScrollBehavior.Instant;
 
   private selectFirstSearchResult$$: Subscription;
@@ -121,25 +124,12 @@ export class PortalComponent implements OnInit, OnDestroy {
 
   public igoSearchPointerSummaryEnabled = false;
 
-  public tableStore = new EntityStore([]);
-  public tableTemplate = {
-    selection: true,
-    sort: true,
-    columns: [
-      {
-        name: 'id',
-        title: 'ID'
-      },
-      {
-        name: 'name',
-        title: 'Name'
-      },
-      {
-        name: 'description',
-        title: 'Description'
-      }
-    ]
-  };
+  public toastPanelForExpansionOpened = true;
+  private activeWidget$$: Subscription;
+  public showToastPanelForExpansionToggle = false;
+  public selectedWorkspace$: BehaviorSubject<Workspace> = new BehaviorSubject(undefined);
+  private toolToActivate$$: Subscription;
+  private _toastPanelOpened = false;
 
   @ViewChild('mapBrowser', { read: ElementRef }) mapBrowser: ElementRef;
   @ViewChild('searchBar', { read: ElementRef }) searchBar: ElementRef;
@@ -176,7 +166,7 @@ export class PortalComponent implements OnInit, OnDestroy {
   }
 
   get expansionPanelBackdropShown(): boolean {
-    return false;
+    return this.expansionPanelExpanded && this.toastPanelForExpansionOpened;
   }
 
   get actionbarMode(): ActionbarMode {
@@ -235,7 +225,6 @@ export class PortalComponent implements OnInit, OnDestroy {
   set toastPanelOpened(value: boolean) {
     this._toastPanelOpened = value;
   }
-  private _toastPanelOpened = false;
 
   get workspaceStore(): WorkspaceStore {
     return this.workspaceState.store;
@@ -261,7 +250,8 @@ export class PortalComponent implements OnInit, OnDestroy {
     private toolState: ToolState,
     private searchSourceService: SearchSourceService,
     private searchService: SearchService,
-    private configService: ConfigService
+    private configService: ConfigService,
+    private importExportState: ImportExportState
   ) {
     this.hasExpansionPanel = this.configService.getConfig('hasExpansionPanel');
     this.forceCoordsNA = this.configService.getConfig('app.forceCoordsNA');
@@ -299,25 +289,6 @@ export class PortalComponent implements OnInit, OnDestroy {
       }
     ]);
 
-    this.selectedWorkspace$ = this.workspaceStore.stateView
-    .firstBy$(
-      (record: EntityRecord<Workspace>) => record.state.selected === true
-    )
-    .pipe(
-      map((record: EntityRecord<Workspace>) => {
-        return record === undefined ? undefined : record.entity;
-      })
-    );
-
-
-    this.tableStore.load([
-      { id: '2', name: 'Name 2', description: 'Description 2' },
-      { id: '1', name: 'Name 1', description: 'Description 1' },
-      { id: '3', name: 'Name 3', description: 'Description 3' },
-      { id: '4', name: 'Name 4', description: 'Description 4' },
-      { id: '5', name: 'Name 5', description: 'Description 5' }
-    ]);
-
     this.queryStore.count$.subscribe(i => {
       this.map.viewController.padding[2] = i ? 280 : 0;
     });
@@ -326,10 +297,61 @@ export class PortalComponent implements OnInit, OnDestroy {
     this.onSettingsChange$.subscribe(() => {
       this.searchState.setSearchSettingsChange();
     });
+
+    this.workspaceState.store.empty$.subscribe(workspaceEmpty => {
+      this.emptyWorkspaces$.next(workspaceEmpty);
+    });
+
+    this.activeWidget$$ = this.workspaceState.activeWorkspaceWidget$.subscribe((widget: Widget) => {
+      if (widget !== undefined) {
+        this.openToastPanelForExpansion();
+        this.showToastPanelForExpansionToggle = true;
+      } else {
+        this.closeToastPanelForExpansion();
+        this.showToastPanelForExpansionToggle = false;
+      }
+    });
+  }
+
+  selectedWorkspace(e) {
+    this.selectedWorkspace$.next(e.value);
+    if (this.toolToActivate$$) {
+      this.toolToActivate$$.unsubscribe();
+    }
+    this.toolToActivate$$ = e.value.toolToActivate$.subscribe(r => {
+      if (!r) { return; }
+      if (r.options) {
+        let exportOptions: ExportOptions = this.importExportState.exportOptions$.value;
+        if (!exportOptions) {
+          exportOptions = {
+            layer: r.options.layer,
+            featureInMapExtent: r.options.featureInMapExtent,
+            format: undefined,
+            name: undefined
+          };
+        } else {
+          exportOptions.layer = r.options.layer;
+          exportOptions.featureInMapExtent = r.options.featureInMapExtent;
+        }
+        this.importExportState.setsExportOptions(exportOptions);
+        this.importExportState.setSelectedTab(1);
+      }
+
+
+      if (this.toolbox.getTool(r.toolbox)) {
+        this.toolbox.activateTool(r.toolbox);
+        if (!this.sidenavOpened) {
+          this.openSidenav();
+        }
+      }
+    });
   }
 
   ngOnDestroy() {
     this.context$$.unsubscribe();
+    if (this.toolToActivate$$) {
+      this.toolToActivate$$.unsubscribe();
+    }
   }
 
   /**
@@ -346,6 +368,18 @@ export class PortalComponent implements OnInit, OnDestroy {
 
   onToggleSidenavClick() {
     this.toggleSidenav();
+  }
+
+  onDeactivateWorkspaceWidget() {
+    this.closeToastPanelForExpansion();
+  }
+
+  closeToastPanelForExpansion() {
+    this.toastPanelForExpansionOpened = false;
+  }
+
+  openToastPanelForExpansion() {
+    this.toastPanelForExpansionOpened = true;
   }
 
   onMapQuery(event: { features: Feature[]; event: OlMapBrowserPointerEvent }) {
