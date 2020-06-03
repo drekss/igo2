@@ -96,8 +96,16 @@
   </mat-sidenav-content>
 </mat-sidenav-container>
 
+<!-- NEED TO TRIGGER THE WORKSPACE UPDATE DIRECTIVE -->
+<!-- <ng-template>
+  <igo-workspace-selector igoWorkspaceSelector [store]="workspaceStore" [map]="map">
+  </igo-workspace-selector>
+</ng-template> -->
+
+<!-- *ngIf="hasExpansionPanel && !(emptyWorkspaces$ | async)" -->
 <app-expansion-panel
   *ngIf="hasExpansionPanel"
+  [backdropShown]="expansionPanelBackdropShown"
   [(expanded)]="expansionPanelExpanded"
   [@expansionPanelSize]="getExpansionPanelStatus()"
   [@toastOffsetY]="(isMobile() && !toastPanelOpened && queryState.store.entities$.value.length > 0 && !expansionPanelExpanded) ? 'true' : 'false'">
@@ -106,7 +114,8 @@
     <igo-workspace-selector 
       igoWorkspaceSelector
       [store]="workspaceStore"
-      [map]="map">
+      [map]="map"
+      (selectedChange)="selectedWorkspace($event)">
     </igo-workspace-selector>
 
     <ng-container *ngIf="selectedWorkspace$ | async as workspace">
@@ -120,7 +129,6 @@
         [mode]="actionbarMode">
       </igo-actionbar>
   
-      <igo-workspace-widget-outlet [workspace]="workspace"></igo-workspace-widget-outlet>
     </ng-container>
   </ng-container>
 
@@ -130,11 +138,29 @@
     </igo-entity-table>
   </ng-container>
 
-  <!-- <igo-entity-table
-    [store]="tableStore"
-    [template]="tableTemplate">
-  </igo-entity-table> -->
 </app-expansion-panel>
+
+<app-toast-panel-for-expansion   
+  [withHeader]="false"
+  [(opened)]="toastPanelForExpansionOpened"
+  (clear)="clearSearchResult()">
+
+  <div class="toast-panel-for-expansion-close-button-container">
+    <button
+      mat-icon-button
+      color="warn"
+      (click)="toastPanelForExpansionOpened = false">
+      <mat-icon svgIcon="close"></mat-icon>  
+    </button>
+  </div>
+
+  <igo-workspace-widget-outlet
+    *ngIf="selectedWorkspace$ | async as workspace"
+    [workspace]="workspace"
+    (deactivateWidget)="onDeactivateWorkspaceWidget()">
+  </igo-workspace-widget-outlet>
+
+</app-toast-panel-for-expansion >
 
 <app-toast-panel *ngIf="!(queryStore.empty$ | async)"
   [map]="map"
