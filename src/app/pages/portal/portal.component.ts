@@ -95,7 +95,6 @@ import {
 export class PortalComponent implements OnInit, OnDestroy {
   public minSearchTermLength = 2;
   public hasExpansionPanel = false;
-  public emptyWorkspaces$ = new BehaviorSubject<boolean>(false);
   public expansionPanelExpanded = false;
   // public toastPanelOpened = true;
   public sidenavOpened = false;
@@ -299,7 +298,8 @@ export class PortalComponent implements OnInit, OnDestroy {
     });
 
     this.workspaceState.store.empty$.subscribe(workspaceEmpty => {
-      this.emptyWorkspaces$.next(workspaceEmpty);
+      this.hasExpansionPanel  = workspaceEmpty ? false : true;
+      this.getBaselayersSwitcherStatus();
     });
 
     this.activeWidget$$ = this.workspaceState.activeWorkspaceWidget$.subscribe((widget: Widget) => {
@@ -320,7 +320,7 @@ export class PortalComponent implements OnInit, OnDestroy {
     }
     this.toolToActivate$$ = e.value.toolToActivate$.subscribe(r => {
       if (!r) { return; }
-      if (r.options) {
+      if (r.options && r.toolbox === 'importExport') {
         let exportOptions: ExportOptions = this.importExportState.exportOptions$.value;
         if (!exportOptions) {
           exportOptions = {
