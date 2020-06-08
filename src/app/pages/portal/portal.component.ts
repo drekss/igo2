@@ -97,6 +97,7 @@ export class PortalComponent implements OnInit, OnDestroy {
   public hasExpansionPanel = false;
   public expansionPanelExpanded = false;
   // public toastPanelOpened = true;
+  public fullExtent;
   public sidenavOpened = false;
   public searchBarTerm = '';
   public onSettingsChange$ = new BehaviorSubject<boolean>(undefined);
@@ -615,6 +616,22 @@ export class PortalComponent implements OnInit, OnDestroy {
       this.mapBrowser.nativeElement.classList.add('toast-offset-attribution');
     } else {
       this.mapBrowser.nativeElement.classList.remove('toast-offset-attribution');
+    }
+  }
+
+  getExtent() {
+    if (!this.sidenavOpened) {
+      if (this.fullExtent) {
+        return 'fullStandard';
+      } else {
+        return 'standard';
+      }
+    } else if (this.sidenavOpened) {
+      if (this.fullExtent) {
+        return 'fullOffsetX';
+      } else {
+        return 'standardOffsetX';
+      }
     }
   }
 
