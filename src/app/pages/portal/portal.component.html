@@ -97,11 +97,11 @@
 </mat-sidenav-container>
 
 <!-- NEED TO TRIGGER THE WORKSPACE UPDATE DIRECTIVE -->
-<igo-workspace-selector igoWorkspaceSelector [store]="workspaceStore" [map]="map">
+<igo-workspace-selector *ngIf="hasExpansionPanel" igoWorkspaceSelector [store]="workspaceStore" [map]="map">
 </igo-workspace-selector>
 
 <app-expansion-panel
-  *ngIf="hasExpansionPanel"
+  *ngIf="hasExpansionPanel && (workspaceState.workspaceEnabled$ | async)"
   [backdropShown]="expansionPanelBackdropShown"
   [(expanded)]="expansionPanelExpanded"
   [@expansionPanelSize]="getExpansionPanelStatus()"
@@ -112,7 +112,7 @@
       igoWorkspaceSelector
       [store]="workspaceStore"
       [map]="map"
-      (selectedChange)="selectedWorkspace($event)">
+      (selectedChange)="selectedWorkspace($event.value)">
     </igo-workspace-selector>
 
     <ng-container *ngIf="selectedWorkspace$ | async as workspace">

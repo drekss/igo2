@@ -95,7 +95,7 @@ import {
 export class PortalComponent implements OnInit, OnDestroy {
   public minSearchTermLength = 2;
   public hasExpansionPanel = false;
-  public expansionPanelExpanded = false;
+  // public expansionPanelExpanded = false;
   // public toastPanelOpened = true;
   public fullExtent;
   public sidenavOpened = false;
@@ -159,6 +159,13 @@ export class PortalComponent implements OnInit, OnDestroy {
       (this.isMobile() || (this.isTablet() && this.isPortrait())) &&
       this.sidenavOpened
     );
+  }
+
+  get expansionPanelExpanded(): boolean {
+    return this.workspaceState.workspacePanelExpanded;
+  }
+  set expansionPanelExpanded(value: boolean) {
+    this.workspaceState.workspacePanelExpanded = value;
   }
 
   get toastPanelShown(): boolean {
@@ -299,8 +306,21 @@ export class PortalComponent implements OnInit, OnDestroy {
     });
 
     this.workspaceState.store.empty$.subscribe(workspaceEmpty => {
-      this.hasExpansionPanel  = workspaceEmpty ? false : true;
+      if (!this.hasExpansionPanel) { return; }
+      this.workspaceState.workspaceEnabled$.next(workspaceEmpty ? false : true);
+      if (workspaceEmpty) {
+        this.expansionPanelExpanded = false;
+      }
       this.updateMapBrowserClass();
+    });
+
+    this.workspaceState.workspace$.subscribe(activeWks => {
+      if (activeWks) {
+        this.selectedWorkspace$.next(activeWks);
+        this.expansionPanelExpanded = true;
+      } else {
+        this.expansionPanelExpanded = false;
+      }
     });
 
     this.activeWidget$$ = this.workspaceState.activeWorkspaceWidget$.subscribe((widget: Widget) => {
@@ -312,14 +332,17 @@ export class PortalComponent implements OnInit, OnDestroy {
         this.showToastPanelForExpansionToggle = false;
       }
     });
+
+    this.workspaceState.workspaceEnabled$.next(this.hasExpansionPanel);
   }
 
-  selectedWorkspace(e) {
-    this.selectedWorkspace$.next(e.value);
+  selectedWorkspace(workspace: Workspace) {
+    // this.se lectedkWorkspace$.next(workspace);
     if (this.toolToActivate$$) {
       this.toolToActivate$$.unsubscribe();
     }
-    this.toolToActivate$$ = e.value.toolToActivate$.subscribe(r => {
+    this.toolToActivate$$ = workspace.toolToActivate$.subscribe(r => {
+      console.log('r', r);
       if (!r) { return; }
       if (r.options && r.toolbox === 'importExport') {
         let exportOptions: ExportOptions = this.importExportState.exportOptions$.value;
@@ -577,13 +600,13 @@ export class PortalComponent implements OnInit, OnDestroy {
 
   updateMapBrowserClass() {
     const header = this.queryState.store.entities$.value.length > 0;
-    if (this.hasExpansionPanel) {
+    if (this.hasExpansionPanel && this.workspaceState.workspaceEnabled$.value) {
       this.mapBrowser.nativeElement.classList.add('has-expansion-panel');
     } else {
       this.mapBrowser.nativeElement.classList.remove('has-expansion-panel');
     }
 
-    if (this.expansionPanelExpanded) {
+    if (this.hasExpansionPanel && this.expansionPanelExpanded) {
       this.mapBrowser.nativeElement.classList.add('expansion-offset');
     } else {
       this.mapBrowser.nativeElement.classList.remove('expansion-offset');
