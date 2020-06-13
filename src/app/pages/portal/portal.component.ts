@@ -305,6 +305,7 @@ export class PortalComponent implements OnInit, OnDestroy {
       this.searchState.setSearchSettingsChange();
     });
 
+    this.workspaceState.workspaceEnabled$.next(this.hasExpansionPanel);
     this.workspaceState.store.empty$.subscribe(workspaceEmpty => {
       if (!this.hasExpansionPanel) { return; }
       this.workspaceState.workspaceEnabled$.next(workspaceEmpty ? false : true);
@@ -332,8 +333,6 @@ export class PortalComponent implements OnInit, OnDestroy {
         this.showToastPanelForExpansionToggle = false;
       }
     });
-
-    this.workspaceState.workspaceEnabled$.next(this.hasExpansionPanel);
   }
 
   selectedWorkspace(workspace: Workspace) {
