@@ -117,15 +117,14 @@
 
     <ng-container *ngIf="selectedWorkspace$ | async as workspace">
       <igo-actionbar
-        [icon]= "head-dots-horizontal-outline"
         *ngIf="workspace.actionStore"
         [store]="workspace.actionStore"
-        [horizontal]="true"
-        [withToggleButton]="true"
+        [withIcon]="true"
         [withTitle]="actionbarWithTitle"
+        [horizontal]="true"
+        [withToggleButton]="actionbarMode === 'overlay'"
         [mode]="actionbarMode">
       </igo-actionbar>
-  
     </ng-container>
   </ng-container>
 

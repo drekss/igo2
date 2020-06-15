@@ -177,12 +177,12 @@ export class PortalComponent implements OnInit, OnDestroy {
   }
 
   get actionbarMode(): ActionbarMode {
-    if (this.mediaService.media$.value === Media.Mobile) {
-      return ActionbarMode.Overlay;
+    const media = this.mediaService.media$.value;
+    const orientation = this.mediaService.orientation$.value;
+    if (media === Media.Desktop && orientation === MediaOrientation.Landscape) {
+      return ActionbarMode.Dock;
     }
-    return this.expansionPanelExpanded
-      ? ActionbarMode.Dock
-      : ActionbarMode.Overlay;
+    return ActionbarMode.Overlay;
   }
 
   get actionbarWithTitle(): boolean {
