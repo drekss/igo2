@@ -23,7 +23,6 @@ import {
   ActionbarMode,
   Workspace,
   WorkspaceStore,
-  EntityRecord,
   ActionStore,
   EntityStore,
   // getEntityTitle,
@@ -103,15 +102,6 @@ export class PortalComponent implements OnInit, OnDestroy {
   public onSettingsChange$ = new BehaviorSubject<boolean>(undefined);
   public termDefinedInUrl = false;
   private addedLayers$$: Subscription[] = [];
-  private selectFirst: boolean;
-  private selectFirstSearchResult: boolean;
-  private selectFirstSearchResult$: BehaviorSubject<
-    boolean
-  > = new BehaviorSubject(true);
-
-  public scrollBehavior = EntityTableScrollBehavior.Instant;
-
-  private selectFirstSearchResult$$: Subscription;
   public zoomAuto = false;
   public forceCoordsNA = false;
 
