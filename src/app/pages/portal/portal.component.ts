@@ -331,7 +331,6 @@ export class PortalComponent implements OnInit, OnDestroy {
       this.toolToActivate$$.unsubscribe();
     }
     this.toolToActivate$$ = workspace.toolToActivate$.subscribe(r => {
-      console.log('r', r);
       if (!r) { return; }
       if (r.options && r.toolbox === 'importExport') {
         let exportOptions: ExportOptions = this.importExportState.exportOptions$.value;
