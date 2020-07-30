@@ -9,7 +9,7 @@ import {
 import { ActivatedRoute, Params } from '@angular/router';
 import { Subscription, of, BehaviorSubject } from 'rxjs';
 import { debounceTime, take } from 'rxjs/operators';
-
+import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { MapBrowserPointerEvent as OlMapBrowserPointerEvent } from 'ol/MapBrowserEvent';
 import * as olProj from 'ol/proj';
 
@@ -74,6 +74,9 @@ import {
   mapSlideY
 } from './portal.animation';
 
+import { WelcomeWindowComponent } from './welcome-window/welcome-window.component';
+import { WelcomeWindowService } from './welcome-window/welcome-window.service';
+
 @Component({
   selector: 'app-portal',
   templateUrl: './portal.component.html',
@@ -131,8 +134,10 @@ export class PortalComponent implements OnInit, OnDestroy {
     ]
   };
 
-  @ViewChild('mapBrowser', { read: ElementRef, static: true }) mapBrowser: ElementRef;
-  @ViewChild('searchBar', { read: ElementRef, static: true }) searchBar: ElementRef;
+  @ViewChild('mapBrowser', { read: ElementRef, static: true })
+  mapBrowser: ElementRef;
+  @ViewChild('searchBar', { read: ElementRef, static: true })
+  searchBar: ElementRef;
 
   get map(): IgoMap {
     return this.mapState.map;
@@ -251,7 +256,9 @@ export class PortalComponent implements OnInit, OnDestroy {
     private toolState: ToolState,
     private searchSourceService: SearchSourceService,
     private searchService: SearchService,
-    private configService: ConfigService
+    private configService: ConfigService,
+    private welcomeWindowService: WelcomeWindowService,
+    public dialogWindow: MatDialog
   ) {
     this.hasExpansionPanel = this.configService.getConfig('hasExpansionPanel');
     this.forceCoordsNA = this.configService.getConfig('app.forceCoordsNA');
@@ -263,9 +270,11 @@ export class PortalComponent implements OnInit, OnDestroy {
   ngOnInit() {
     window['IGO'] = this;
 
-    this.authService.authenticate$.subscribe(
-      () => (this.contextLoaded = false)
-    );
+    this.initWelcomeWindow();
+
+    this.authService.authenticate$.subscribe((authenticated) => {
+      this.contextLoaded = false;
+    });
 
     this.context$$ = this.contextState.context$.subscribe(
       (context: DetailedContext) => this.onChangeContext(context)
@@ -297,7 +306,7 @@ export class PortalComponent implements OnInit, OnDestroy {
       { id: '5', name: 'Name 5', description: 'Description 5' }
     ]);
 
-    this.queryStore.count$.subscribe(i => {
+    this.queryStore.count$.subscribe((i) => {
       this.map.viewController.padding[2] = i ? 280 : 0;
     });
     this.readQueryParams();
@@ -333,7 +342,7 @@ export class PortalComponent implements OnInit, OnDestroy {
 
     const results = event.features.map((feature: Feature) => {
       let querySearchSource = querySearchSourceArray.find(
-        s => s.title === feature.meta.sourceTitle
+        (s) => s.title === feature.meta.sourceTitle
       );
       if (!querySearchSource) {
         querySearchSource = new QuerySearchSource({
@@ -420,7 +429,7 @@ export class PortalComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.route.queryParams.pipe(debounceTime(250)).subscribe(params => {
+    this.route.queryParams.pipe(debounceTime(250)).subscribe((params) => {
       if (!params['context'] || params['context'] === context.uri) {
         this.readLayersQueryParams(params);
       }
@@ -471,8 +480,8 @@ export class PortalComponent implements OnInit, OnDestroy {
     this.map.overlay.removeFeatures(
       this.searchStore
         .all()
-        .filter(f => f.meta.dataType === FEATURE)
-        .map(f => f.data as Feature)
+        .filter((f) => f.meta.dataType === FEATURE)
+        .map((f) => f.data as Feature)
     );
   }
 
@@ -516,7 +525,7 @@ export class PortalComponent implements OnInit, OnDestroy {
   }
 
   searchCoordinate(coord: [number, number]) {
-    this.searchBarTerm = coord.map(c => c.toFixed(6)).join(', ');
+    this.searchBarTerm = coord.map((c) => c.toFixed(6)).join(', ');
   }
 
   updateMapBrowserClass(e) {
@@ -669,7 +678,7 @@ export class PortalComponent implements OnInit, OnDestroy {
   }
 
   private readQueryParams() {
-    this.route.queryParams.pipe(debounceTime(250)).subscribe(params => {
+    this.route.queryParams.pipe(debounceTime(250)).subscribe((params) => {
       this.readLayersQueryParams(params);
       this.readToolParams(params);
       this.readSearchParams(params);
@@ -691,11 +700,8 @@ export class PortalComponent implements OnInit, OnDestroy {
   private readFocusFirst(params: Params) {
     if (params['sf'] === '1' && this.termDefinedInUrl) {
       const entities$$ = this.searchStore.entities$
-        .pipe(
-          debounceTime(500),
-          take(1)
-        )
-        .subscribe(entities => {
+        .pipe(debounceTime(500), take(1))
+        .subscribe((entities) => {
           entities$$.unsubscribe();
           if (entities.length) {
             this.computeFocusFirst();
@@ -730,13 +736,15 @@ export class PortalComponent implements OnInit, OnDestroy {
 
   private readLayersQueryParamsWMS(params: Params) {
     if ((params['layers'] || params['wmsLayers']) && params['wmsUrl']) {
-      const nameParamLayers =  (params['wmsLayers']) ? 'wmsLayers' : 'layers';  // for maintain compatibility
+      const nameParamLayers = params['wmsLayers'] ? 'wmsLayers' : 'layers'; // for maintain compatibility
       const layersByService = params[nameParamLayers].split('),(');
       const urls = params['wmsUrl'].split(',');
       let cnt = 0;
-      urls.forEach(url => {
-        const currentLayersByService = this.extractLayersByService(layersByService[cnt]);
-        currentLayersByService.forEach(layer => {
+      urls.forEach((url) => {
+        const currentLayersByService = this.extractLayersByService(
+          layersByService[cnt]
+        );
+        currentLayersByService.forEach((layer) => {
           const layerFromUrl = layer.split(':igoz');
           const layerOptions = {
             url: url,
@@ -763,9 +771,11 @@ export class PortalComponent implements OnInit, OnDestroy {
       const layersByService = params['wmtsLayers'].split('),(');
       const urls = params['wmtsUrl'].split(',');
       let cnt = 0;
-      urls.forEach(url => {
-        const currentLayersByService = this.extractLayersByService(layersByService[cnt]);
-        currentLayersByService.forEach(layer => {
+      urls.forEach((url) => {
+        const currentLayersByService = this.extractLayersByService(
+          layersByService[cnt]
+        );
+        currentLayersByService.forEach((layer) => {
           const layerFromUrl = layer.split(':igoz');
           const layerOptions = {
             url: url,
@@ -822,7 +832,7 @@ export class PortalComponent implements OnInit, OnDestroy {
             }
           }
         })
-        .subscribe(l => {
+        .subscribe((l) => {
           this.map.addLayer(l);
         })
     );
@@ -852,7 +862,7 @@ export class PortalComponent implements OnInit, OnDestroy {
             layer: name
           }
         } as any)
-        .subscribe(l => {
+        .subscribe((l) => {
           this.map.addLayer(l);
         })
     );
@@ -897,5 +907,33 @@ export class PortalComponent implements OnInit, OnDestroy {
       visible = false;
     }
     return visible;
+  }
+
+  private initWelcomeWindow(): void {
+    const authConfig = this.configService.getConfig('auth');
+    if (authConfig) {
+      this.authService.logged$.subscribe((logged) => {
+        if (logged) {
+          this.createWelcomeWindow();
+        }
+      });
+    } else {
+      this.createWelcomeWindow();
+    }
+  }
+
+  private createWelcomeWindow(): void {
+    if (this.welcomeWindowService.hasWelcomeWindow()) {
+      const welcomWindowConfig: MatDialogConfig = this.welcomeWindowService.getConfig();
+
+      const dialogRef = this.dialogWindow.open(
+        WelcomeWindowComponent,
+        welcomWindowConfig
+      );
+
+      dialogRef.afterClosed().subscribe((result) => {
+        this.welcomeWindowService.afterClosedWelcomeWindow();
+      });
+    }
   }
 }

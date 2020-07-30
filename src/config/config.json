@@ -6,5 +6,10 @@
   },
   "theme": "blue-theme",
   "hasExpansionPanel": false,
-  "hasSearchPointerSummary": false
+  "hasSearchPointerSummary": false,
+  "title": "IGO Démo",
+  "welcomeWindow": {
+    "showAgainOnNewIGOVersion": true,
+    "nbVisitToShowAgain": 30
+  }
 }
