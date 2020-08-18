@@ -12,6 +12,11 @@
       "enabled": true
     }
   },
+  "title": "IGO Démo",
+  "welcomeWindow": {
+    "showAgainOnNewIGOVersion": true,
+    "nbVisitToShowAgain": 30
+  },
   "catalog": {
     "sources": [
       {
