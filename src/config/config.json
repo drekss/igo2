@@ -26,37 +26,56 @@
           {
             "id": "1",
             "url": "https://servicesweb.cartes.canada.ca/arcgis/services/NRCan/CGC_Analyses_Granulometriques/MapServer/WMSServer?",
-            "groupImpose": {"id": "geo", "title": "Géologie"}
+            "groupImpose": {"id": "geo", "title": "Géologie"},
+            "regFilters": ["1", "3"]
           },
           {
             "id": "2",
             "url": "https://geoappext.nrcan.gc.ca/arcgis/services/GSCA/basin_f/MapServer/WMSServer?",
-            "groupImpose": {"id": "geo", "title": "Géologie"}
+            "groupImpose": {"id": "geo", "title": "Géologie"},
+            "regFilters": ["3", "6"]
           },
           {
             "id": "3",
             "url": "https://geoappext.nrcan.gc.ca/arcgis/services/GSCA/vecteurs_g%C3%A9oscientifiques_f/MapServer/WMSServer?",
-            "groupImpose": {"id": "geo", "title": "Géologie"}
+            "groupImpose": {"id": "geo", "title": "Géologie"},
+            "regFilters": ["0"]
           },
           {
             "id": "4",
             "url": "https://gisp.dfo-mpo.gc.ca/arcgis/services/FGP/CHS_NONNA_100/MapServer/WMSServer?",
-            "groupImpose": {"id": "bathy", "title": "Bathymétrie"}
+            "groupImpose": {"id": "bathy", "title": "Bathymétrie"},
+            "regFilters": ["0"]
           },
           {
             "id": "5",
             "url": "https://geoappext.nrcan.gc.ca/arcgis/services/GSCA/multifaisceaux_est_f/MapServer/WMSServer?",
-            "groupImpose": {"id": "bathy", "title": "Bathymétrie"}
+            "groupImpose": {"id": "bathy", "title": "Bathymétrie"},
+            "regFilters": [
+              "109",
+              "116",
+              "110",
+              "109",
+              "105",
+              "106",
+              "107",
+              "115",
+              "90",
+              "95",
+              "89"
+            ]
           },
           {
             "id": "6",
             "url": "https://geoappext.nrcan.gc.ca/arcgis/services/GSCA/basin_f/MapServer/WMSServer?",
-            "groupImpose": {"id": "RNCAN", "title": "Ressources naturelles"}
+            "groupImpose": {"id": "RNCAN", "title": "Ressources naturelles"},
+            "regFilters": ["23"]
           },
           {
             "id": "7",
             "url": "https://ec.gc.ca/arcgis/services/EPB_EPO/ShorelineSegmentationWithSCATClassification/MapServer/WMSServer?",
-            "groupImpose": {"id": "cotier", "title": "Milieu côtier"}
+            "groupImpose": {"id": "cotier", "title": "Milieu côtier"},
+            "regFilters": ["2"]
           }
         ]
       }
